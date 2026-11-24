@@ -1,0 +1,47 @@
+name: Majlis outage notice
+
+on:
+  workflow_dispatch:
+    inputs:
+      state:
+        description: Show or hide the notice
+        type: choice
+        options: [show, hide]
+        default: show
+      title:
+        description: Title (max 40 letters)
+        default: مجلس متوقف مؤقتاً
+      message:
+        description: Message (max 220 letters)
+        default: عندنا عطل ونشتغل عليه الحين. نرجع قريب إن شاء الله.
+      hours:
+        description: Hide by itself after this many hours
+        default: "6"
+
+permissions:
+  contents: write
+
+concurrency: outage-notice
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          STATE: ${{ inputs.state }}
+          TITLE: ${{ inputs.title }}
+          MESSAGE: ${{ inputs.message }}
+          HOURS: ${{ inputs.hours }}
+        run: |
+          hours=$(printf '%s' "$HOURS" | grep -Ex '[1-9][0-9]?' || echo 6)
+          jq -n --arg state "$STATE" --arg title "$TITLE" --arg message "$MESSAGE" \
+            --arg updated "$(date -u +%FT%TZ)" --arg expires "$(date -u -d "+$hours hours" +%FT%TZ)" \
+            '{schema: 1, active: ($state == "show"), title: $title, message: $message, updatedAt: $updated, expiresAt: $expires}' > status.json
+          cat status.json
+          git config user.name "majlis-outage-notice"
+          git config user.email "noreply@github.com"
+          git add status.json
+          git commit -m "Outage notice: $STATE"
+          git push

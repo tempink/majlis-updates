@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>مجلس</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body { display: grid; place-items: center; background: #02263b; color: #eef5fa;
+    font-family: "Cairo", "Geeza Pro", "Segoe UI", system-ui, sans-serif; text-align: center; }
+  main { box-sizing: border-box; width: min(420px, 100%); padding: 32px 24px; }
+  h1 { margin: 0 0 12px; font-size: 28px; line-height: 1.5; }
+  p { margin: 0 0 24px; font-size: 17px; line-height: 1.9; }
+  a { display: block; padding: 14px 20px; border-radius: 16px; background: #f5a300; color: #17394d;
+    font-size: 18px; font-weight: 700; text-decoration: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title">مجلس متوقف مؤقتاً</h1>
+  <p id="message">ما قدرنا نوصل للخادم. جرّب مرة ثانية بعد شوي.</p>
+  <a href="https://playmajlis.com/" target="_top">جرّب مرة ثانية</a>
+</main>
+<script>
+  // Heroku shows this page inside playmajlis.com while the server is down.
+  (async function () {
+    var urls = ['https://raw.githubusercontent.com/tempink/majlis-updates/main/status.json', 'https://tempink.github.io/majlis-updates/status.json'];
+    for (var i = 0; i < urls.length; i++) {
+      try {
+        var r = await fetch(urls[i] + '?t=' + Math.floor(Date.now() / 30000), { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer' });
+        if (!r.ok) continue;
+        var d = await r.json();
+        if (d.schema === 1 && d.active === true && Date.parse(d.expiresAt) > Date.now() && d.title && d.message) {
+          document.getElementById('title').textContent = String(d.title).slice(0, 40);
+          document.getElementById('message').textContent = String(d.message).slice(0, 220);
+        }
+        return;
+      } catch (e) {}
+    }
+  })();
+</script>
+</body>
+</html>
